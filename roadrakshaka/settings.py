@@ -88,8 +88,9 @@ DATABASES = {
 }
 
 # Override database settings with dj-database-url if DATABASE_URL is set
-db_from_env = dj_database_url.config(conn_max_age=600)
-DATABASES['default'].update(db_from_env)
+if 'DATABASE_URL' in os.environ:
+    db_from_env = dj_database_url.config(conn_max_age=600)
+    DATABASES['default'].update(db_from_env)
 
 
 # Password validation
