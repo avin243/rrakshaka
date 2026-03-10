@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reviewer Dashboard - RoadRakshaka{% endblock %}
+
+{% block extra_head %}
+<style>
+    .reviewer-dashboard {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .dashboard-header {
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .report-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .report-card {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .report-details h3 {
+        margin-top: 0;
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    
+    .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .meta-item {
+        font-size: 0.9rem;
+    }
+    
+    .meta-label {
+        color: var(--text-secondary);
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+    
+    .meta-value {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .badge-severity-Low { background: #e0f2fe; color: #0369a1; }
+    .badge-severity-Medium { background: #fef08a; color: #854d0e; }
+    .badge-severity-High { background: #fee2e2; color: #991b1b; }
+    
+    .badge-status-Submitted { background: #e5e7eb; color: #374151; }
+    .badge-status-Acknowledged { background: #dbeafe; color: #1e40af; }
+    .badge-status-InProgress { background: #fef3c7; color: #92400e; }
+    .badge-status-Resolved { background: #dcfce7; color: #166534; }
+    
+    .report-photo img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: var(--radius-md);
+        background: var(--bg-hover);
+    }
+    
+    .review-action-panel {
+        background: var(--bg-hover);
+        padding: 1.5rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        margin-top: 1.5rem;
+    }
+    
+    .review-action-panel h4 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--bg-card);
+        color: var(--text-primary);
+        font-family: inherit;
+    }
+    
+    .btn-update {
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    .no-reports {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reviewer-dashboard">
+    <div class="dashboard-header">
+        <div>
+            <h1>Reviewer Dashboard</h1>
+            <p class="text-secondary">Manage and update civic issue reports</p>
+        </div>
+        <div class="stats">
+            <span class="badge" style="background:var(--primary-color);color:white;font-size:1rem;padding:0.5rem 1rem;">
+                Total Reports: {{ reports|length }}
+            </span>
+        </div>
+    </div>
+
+    {% if not reports %}
+        <div class="no-reports">
+            <h2>No reports found</h2>
+            <p>There are currently no civic issues reported in the system.</p>
+        </div>
+    {% else %}
+        {% for report in reports %}
+            <div class="report-card">
+                <div class="report-details">
+                    <h3>Issue #{{ report.id }} - {{ report.category.name }}</h3>
+                    
+                    <div class="meta-grid">
+                        <div class="meta-item">
+                            <span class="meta-label">Reporter</span>
+                            <span class="meta-value">{{ report.reporter.username }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Date Submitted</span>
+                            <span class="meta-value">{{ report.created_at|date:"M d, Y h:i A" }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Severity</span>
+                            <span class="badge badge-severity-{{ report.severity }}">{{ report.severity }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Current Status</span>
+                            <span class="badge badge-status-{{ report.status|cut:' ' }}">{{ report.status }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="meta-item" style="margin-bottom: 1rem;">
+                        <span class="meta-label">Description</span>
+                        <p style="margin: 0.25rem 0; line-height: 1.5;">{{ report.description }}</p>
+                    </div>
+                    
+                    {% if report.address %}
+                    <div class="meta-item">
+                        <span class="meta-label">Location Address</span>
+                        <p style="margin: 0.25rem 0;">🗺️ {{ report.address }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Admin Action Form -->
+                    <div class="review-action-panel">
+                        <h4>Update Report Status</h4>
+                        <form method="post" action="{% url 'reviewer_dashboard' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="report_id" value="{{ report.id }}">
+                            
+                            <div class="form-group">
+                                <label for="status_{{ report.id }}">Status</label>
+                                <select name="status" id="status_{{ report.id }}" class="form-control" required>
+                                    {% for value, label in status_choices %}
+                                        <option value="{{ value }}" {% if report.status == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="admin_notes_{{ report.id }}">Admin Notes (Internal)</label>
+                                <textarea name="admin_notes" id="admin_notes_{{ report.id }}" rows="3" class="form-control" placeholder="Add notes for other reviewers or to explain the status change...">{{ report.admin_notes|default:'' }}</textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-update">Update Report</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="report-side">
+                    <div class="report-photo">
+                        {% if report.photo %}
+                            <img src="{{ report.photo.url }}" alt="Issue Photo">
+                        {% else %}
+                            <div style="width:100%; height:200px; display:flex; align-items:center; justify-content:center; background:var(--bg-hover); border-radius:var(--radius-md); color:var(--text-secondary);">
+                                No Photo Provided
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if report.latitude and report.longitude %}
+                        <div style="margin-top: 1rem;">
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ report.latitude }},{{ report.longitude }}" target="_blank" class="btn btn-secondary" style="width: 100%; text-align: center; display: block;">Open in Maps</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
