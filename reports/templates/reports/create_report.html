@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Report an Issue - RoadRakshaka{% endblock %}
+
+{% block extra_head %}
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map { height: 350px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-light); z-index: 1;}
+        
+        .photo-upload-area {
+            border: 2px dashed var(--border-dark);
+            border-radius: var(--radius-lg);
+            padding: 40px 20px;
+            text-align: center;
+            background: var(--off-white);
+            cursor: pointer;
+            transition: var(--transition-fast);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .photo-upload-area:hover, .photo-upload-area.dragover {
+            border-color: var(--safety-orange);
+            background: var(--safety-orange-light);
+        }
+        .photo-preview {
+            max-width: 100%;
+            max-height: 250px;
+            margin-top: 15px;
+            border-radius: var(--radius-md);
+            display: none;
+            box-shadow: var(--shadow-md);
+        }
+
+        .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            background: var(--surface);
+            transition: var(--transition-fast);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02) inset;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--safety-orange);
+            box-shadow: 0 0 0 4px var(--safety-orange-light);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container fade-in-up" style="padding: 60px 20px;">
+    <div style="max-width: 800px; margin: 0 auto;">
+        <div style="text-align:center; margin-bottom: 40px;">
+            <div class="badge badge-orange" style="margin-bottom: 16px;">New Report</div>
+            <h2 style="font-size: 2.5rem; margin-bottom: 8px;">Report a Civic Issue</h2>
+            <p class="text-muted" style="font-size: 1.1rem;">Provide details so the authorities can act quickly.</p>
+        </div>
+
+        <div class="card" style="padding: 40px;">
+            <form method="post" enctype="multipart/form-data" id="reportForm">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                    <div class="alert alert-error" style="margin-bottom: 24px;">Please correct the errors below.</div>
+                    {{ form.non_field_errors }}
+                {% endif %}
+
+                <!-- Step 1: Photo -->
+                <div class="form-group" style="margin-bottom: 40px;">
+                    <label style="display:flex; align-items:center; gap:12px; margin-bottom: 16px; font-weight:700; font-size:1.2rem; font-family:var(--font-heading); color:var(--primary-blue);">
+                        <span style="background:var(--primary-blue); color:var(--white); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.9rem;">1</span>
+                        Upload Photo <span style="color:var(--error);">*</span>
+                    </label>
+                    <div class="photo-upload-area" id="drop-zone">
+                        <div id="upload-text">
+                            <span style="font-size: 3rem; color:var(--text-muted);">📸</span>
+                            <p style="font-weight: 500; font-size: 1.1rem; margin-top:12px;">Tap to snap a photo or drag & drop</p>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin:0;">Clear photos help resolve issues faster.</p>
+                        </div>
+                        <input type="file" name="photo" id="id_photo" accept="image/*" capture="environment" style="display:none;" required>
+                        <img id="image-preview" class="photo-preview" src="#" alt="Preview">
+                    </div>
+                    {% if form.photo.errors %}<div style="color:var(--error); font-size:0.85rem; margin-top:8px;">{{ form.photo.errors }}</div>{% endif %}
+                </div>
+
+                <!-- Step 2: Location Selection -->
+                <div class="form-group" style="margin-bottom: 40px;">
+                    <label style="display:flex; align-items:center; gap:12px; margin-bottom: 16px; font-weight:700; font-size:1.2rem; font-family:var(--font-heading); color:var(--primary-blue);">
+                        <span style="background:var(--primary-blue); color:var(--white); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.9rem;">2</span>
+                        Pinpoint Location <span style="color:var(--error);">*</span>
+                    </label>
+                    <div style="background: var(--info-bg); padding: 16px; border-radius: var(--radius-sm); border: 1px solid rgba(59,130,246,0.2); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                        <span style="font-size: 0.95rem; color: var(--info);">We will auto-detect your location. Drag the pin to adjust.</span>
+                        <button type="button" id="btn-detect-location" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem; border-color: var(--info); color: var(--info); background: transparent;">📍 Get Current Location</button>
+                    </div>
+                    <div id="map"></div>
+                    {{ form.latitude }}
+                    {{ form.longitude }}
+                    {% if form.latitude.errors %}<div style="color:var(--error); font-size:0.85rem; margin-top:8px;">{{ form.latitude.errors }}</div>{% endif %}
+                    
+                    <div style="margin-top: 16px;">
+                        <label for="id_address" style="color:var(--text-main); font-weight:500;">Manual Address (Optional)</label>
+                        {{ form.address }}
+                    </div>
+                </div>
+
+                <!-- Step 3: Issue Details -->
+                <div class="form-group" style="margin-bottom: 40px;">
+                    <label style="display:flex; align-items:center; gap:12px; margin-bottom: 16px; font-weight:700; font-size:1.2rem; font-family:var(--font-heading); color:var(--primary-blue);">
+                        <span style="background:var(--primary-blue); color:var(--white); width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.9rem;">3</span>
+                        Issue Details
+                    </label>
+                    
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:24px; margin-bottom: 24px;">
+                        <div>
+                            <label for="id_category" style="color:var(--text-main); font-weight:500;">Category <span style="color:var(--error);">*</span></label>
+                            {{ form.category }}
+                            {% if form.category.errors %}<div style="color:var(--error); font-size:0.85rem; margin-top:8px;">{{ form.category.errors }}</div>{% endif %}
+                        </div>
+                        <div>
+                            <label for="id_severity" style="color:var(--text-main); font-weight:500;">Severity <span style="color:var(--error);">*</span></label>
+                            {{ form.severity }}
+                            {% if form.severity.errors %}<div style="color:var(--error); font-size:0.85rem; margin-top:8px;">{{ form.severity.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="id_description" style="color:var(--text-main); font-weight:500;">Description <span style="color:var(--error);">*</span></label>
+                        {{ form.description }}
+                        <small class="text-muted" style="display:block; margin-top:4px;">Provide any additional context like landmarks.</small>
+                        {% if form.description.errors %}<div style="color:var(--error); font-size:0.85rem; margin-top:8px;">{{ form.description.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-light); padding-top: 32px; display:flex; justify-content:flex-end; gap: 16px;">
+                    <a href="{% url 'home' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary" style="padding: 14px 32px; font-size: 1.1rem; border-radius: 12px;">Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- File Upload Preview & Drag-Drop ---
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('id_photo');
+    const imgPreview = document.getElementById('image-preview');
+    const uploadText = document.getElementById('upload-text');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            updatePreview();
+        }
+    });
+
+    fileInput.addEventListener('change', updatePreview);
+
+    function updatePreview() {
+        if (fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imgPreview.src = e.target.result;
+                imgPreview.style.display = 'inline-block';
+                uploadText.style.display = 'none';
+            }
+            reader.readAsDataURL(fileInput.files[0]);
+        }
+    }
+
+    // --- Leaflet Map & Geolocation ---
+    const latInput = document.getElementById('id_latitude');
+    const lngInput = document.getElementById('id_longitude');
+    
+    // Default center (India roughly)
+    let defaultLat = 20.5937;
+    let defaultLng = 78.9629;
+    let zoomLevel = 5;
+
+    const map = L.map('map').setView([defaultLat, defaultLng], zoomLevel);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker = L.marker([defaultLat, defaultLng], {draggable: true}).addTo(map);
+
+    marker.on('dragend', function(e) {
+        const position = marker.getLatLng();
+        updateLatLineInputs(position.lat, position.lng);
+    });
+
+    map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        updateLatLineInputs(e.latlng.lat, e.latlng.lng);
+    });
+
+    function updateLatLineInputs(lat, lng) {
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+    }
+
+    document.getElementById('btn-detect-location').addEventListener('click', function() {
+        if ("geolocation" in navigator) {
+            this.textContent = "Detecting...";
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    map.setView([lat, lng], 15);
+                    marker.setLatLng([lat, lng]);
+                    updateLatLineInputs(lat, lng);
+                    document.getElementById('btn-detect-location').textContent = "📍 Auto-Detect Location";
+                },
+                function(error) {
+                    alert("Unable to retrieve your location. Please check your browser permissions.");
+                    document.getElementById('btn-detect-location').textContent = "📍 Auto-Detect Location";
+                }
+            );
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+    });
+
+    // Handle form submit checking if map coordinates exist
+    document.getElementById('reportForm').addEventListener('submit', function(e) {
+        if (!latInput.value || !lngInput.value) {
+            e.preventDefault();
+            alert("Please pin the location on the map.");
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

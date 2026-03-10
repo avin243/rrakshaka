@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Account - RoadRakshaka{% endblock %}
+
+{% block content %}
+<div class="container fade-in-up" style="display:flex; justify-content:center; padding: 80px 20px; align-items:center; min-height: 80vh;">
+    <div class="card" style="width: 100%; max-width: 550px; padding: 48px; border-top: 4px solid var(--info);">
+        <div style="text-align:center; margin-bottom: 32px;">
+            <div class="badge badge-blue" style="margin-bottom: 16px;">Join the Movement</div>
+            <h2 style="font-size: 2rem; margin-bottom: 8px;">Create an Account</h2>
+            <p class="text-muted">Start reporting issues and earning civic badges today.</p>
+        </div>
+
+        <form method="post" action="{% url 'signup' %}">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="alert alert-error" style="margin-bottom: 24px;">
+                    Please correct the errors below.
+                </div>
+                {{ form.non_field_errors }}
+            {% endif %}
+
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="text-muted" style="display:block; margin-top:4px; font-size:0.85rem;">{{ field.help_text|safe }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div style="color:var(--error); font-size:0.85rem; margin-top:5px;">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <div class="form-group">
+                <label for="id_phone">Phone (Optional)</label>
+                <input type="tel" name="phone" id="id_phone" class="form-control" placeholder="Enter your phone number">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_city_ward">City / Ward</label>
+                <select name="city_ward" id="id_city_ward" class="form-control" required aria-required="true" style="appearance:none; background-image:url('data:image/svg+xml;utf8,<svg fill=%22%2364748B%22 xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 width=%2224%22 height=%2224%22><path d=%22M7 10l5 5 5-5z%22/></svg>'); background-repeat:no-repeat; background-position-x:98%; background-position-y:center;">
+                    <option value="">Select your area</option>
+                    <option value="Ward 1">Ward 1 - Central</option>
+                    <option value="Ward 2">Ward 2 - North</option>
+                    <option value="Ward 3">Ward 3 - South</option>
+                    <option value="Ward 4">Ward 4 - East</option>
+                    <option value="Ward 5">Ward 5 - West</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="background: var(--off-white); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); display:flex; gap:12px; align-items:flex-start;">
+                <input type="checkbox" name="terms" id="id_terms" required aria-required="true" style="margin-top:4px; width: 18px; height: 18px; accent-color: var(--primary-blue);">
+                <label for="id_terms" style="margin:0; font-weight:normal; font-size:0.9rem; color:var(--text-muted); cursor:pointer;">
+                    I accept the <a href="#" style="font-weight:600;">Terms of Service</a> and <a href="#" style="font-weight:600;">Privacy Policy</a>.
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px; margin-top: 16px; font-size: 1.1rem; border-radius: 12px;">Create Account</button>
+        </form>
+        
+        <div class="text-center mt-4">
+            <p class="text-muted" style="margin-bottom:0;">Already have an account? <a href="{% url 'login' %}" style="font-weight:600;">Sign In</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Styling Django built-in forms easily */
+    .form-group input:not([type="checkbox"]):not([type="radio"]),
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 14px 16px;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        font-family: inherit;
+        background: var(--surface);
+        transition: var(--transition-fast);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02) inset;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        outline: none;
+        border-color: var(--safety-orange);
+        box-shadow: 0 0 0 4px var(--safety-orange-light);
+    }
+</style>
+{% endblock %}

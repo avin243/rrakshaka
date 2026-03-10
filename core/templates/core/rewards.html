@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Rewards - RoadRakshaka{% endblock %}
+
+{% block content %}
+<div class="container fade-in-up" style="padding: 60px 20px;">
+    
+    <div style="background: linear-gradient(135deg, var(--primary-blue-dark), var(--primary-blue-light)); color:var(--white); padding:80px 40px; border-radius:var(--radius-lg); text-align:center; box-shadow: var(--shadow-xl); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -50px; left: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,106,0,0.2) 0%, transparent 70%); border-radius: 50%;"></div>
+        
+        <h2 style="color: var(--white); font-size: 2.5rem; position: relative; z-index: 2;">Your Impact Profile</h2>
+        <div style="font-size: 5rem; color:var(--safety-orange); font-family: var(--font-heading); font-weight:800; margin:24px 0; position: relative; z-index: 2; text-shadow: 0 4px 20px rgba(255,106,0,0.4);">
+            {{ user.profile.points|default:"0" }} <span style="font-size: 1.5rem; color: #94A3B8; font-weight: 500;">Points</span>
+        </div>
+        <p style="font-size:1.1rem; color:#CBD5E1; max-width: 500px; margin: 0 auto; position: relative; z-index: 2;">Every point represents a positive change in your city. Keep reporting valid issues to earn more rewards!</p>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:32px; margin-top:40px;">
+        <!-- Badges -->
+        <div class="card" style="flex: 1.5; min-width:320px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+                <h3 style="margin: 0;">Your Badges</h3>
+                <span class="badge badge-blue">Achievements</span>
+            </div>
+            
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:24px; margin-top:32px;">
+                {% if user.profile.points >= 10 %}
+                    <div style="text-align:center; background: var(--off-white); padding: 20px 10px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">
+                        <div style="font-size:3.5rem; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">🌟</div>
+                        <p style="font-weight:600; font-size:0.9rem; color: var(--text-main); margin:0;">First Report</p>
+                    </div>
+                {% endif %}
+                {% if user.profile.points >= 50 %}
+                    <div style="text-align:center; background: var(--off-white); padding: 20px 10px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">
+                        <div style="font-size:3.5rem; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">🛡️</div>
+                        <p style="font-weight:600; font-size:0.9rem; color: var(--text-main); margin:0;">Active Citizen</p>
+                    </div>
+                {% endif %}
+                {% if user.profile.points >= 100 %}
+                    <div style="text-align:center; background: var(--warning-bg); border: 1px solid rgba(245,158,11,0.3); padding: 20px 10px; border-radius: var(--radius-md);">
+                        <div style="font-size:3.5rem; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">👑</div>
+                        <p style="font-weight:700; font-size:0.9rem; color: var(--warning); margin:0;">Rakshaka Elite</p>
+                    </div>
+                {% endif %}
+                {% if user.profile.points < 10 %}
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px 0;">
+                        <span style="font-size: 3rem; opacity: 0.5;">🏆</span>
+                        <p class="text-muted" style="margin-top: 16px;">No badges yet. Start reporting to earn them!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- How points work -->
+        <div class="card" style="flex: 1; min-width:300px; background: var(--off-white);">
+            <h3>How to earn points</h3>
+            <p class="text-muted" style="font-size: 0.95rem; margin-bottom: 24px;">The more accurate and actionable your reports are, the more you earn.</p>
+            
+            <ul style="list-style: none; padding: 0; display:flex; flex-direction:column; gap:16px;">
+                <li style="display:flex; justify-content:space-between; align-items:center; padding-bottom: 12px; border-bottom: 1px dashed var(--border-light);">
+                    <span style="font-weight: 500;">Report a valid issue</span>
+                    <span class="badge badge-green">+10 Points</span>
+                </li>
+                <li style="display:flex; justify-content:space-between; align-items:center; padding-bottom: 12px; border-bottom: 1px dashed var(--border-light);">
+                    <span style="font-weight: 500;">Issue marked as 'Resolved'</span>
+                    <span class="badge badge-green">+20 Points</span>
+                </li>
+                <li style="display:flex; justify-content:space-between; align-items:center; padding-bottom: 12px; border-bottom: 1px dashed var(--border-light);">
+                    <span style="font-weight: 500;">Adding extra photos/info</span>
+                    <span class="badge badge-green">+5 Points</span>
+                </li>
+                <li style="display:flex; justify-content:space-between; align-items:center; padding-bottom: 12px;">
+                    <span style="font-weight: 500; color: var(--error);">Spam or fake reports</span>
+                    <span class="badge" style="background: var(--error-bg); color: var(--error);">-15 Points</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

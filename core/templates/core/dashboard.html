@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - RoadRakshaka{% endblock %}
+
+{% block content %}
+<div class="container fade-in-up" style="padding: 60px 20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 40px; flex-wrap:wrap; gap:20px;">
+        <div>
+            <h2 style="font-size: 2.5rem; margin-bottom: 8px;">Welcome back, {{ user.username }}</h2>
+            <p class="text-muted">Here's the status of your reported civic issues.</p>
+        </div>
+        <a href="{% url 'create_report' %}" class="btn btn-primary" style="padding: 14px 28px;">+ Report New Issue</a>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            📄 My Reports <span class="badge badge-gray" style="font-size: 1rem;">{{ user.reports.count }} total</span>
+        </h3>
+        
+        {% if user.reports.count > 0 %}
+            <div style="display:flex; flex-direction:column; gap:20px;">
+                {% for report in user.reports.all|dictsortreversed:"created_at" %}
+                    <div style="border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 24px; display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; transition: var(--transition-fast); background: var(--off-white);">
+                        {% if report.photo %}
+                            <img src="{{ report.photo.url }}" alt="Report" style="width:140px; height:140px; object-fit:cover; border-radius:var(--radius-sm); box-shadow: var(--shadow-sm);">
+                        {% endif %}
+                        <div style="flex:1; min-width: 250px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 8px;">
+                                <h4 style="font-size: 1.25rem;">{{ report.category }}</h4>
+                                {% if report.status == 'Resolved' %}
+                                    <span class="badge badge-green">{{ report.status }}</span>
+                                {% elif report.status == 'In Progress' %}
+                                    <span class="badge badge-orange">{{ report.status }}</span>
+                                {% elif report.status == 'Acknowledged' %}
+                                    <span class="badge badge-blue">{{ report.status }}</span>
+                                {% else %}
+                                    <span class="badge badge-gray">{{ report.status }}</span>
+                                {% endif %}
+                            </div>
+                            <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom: 12px; font-weight: 500;">Tracking ID: RR-{{ report.id|stringformat:"04d" }} &bull; {{ report.created_at|date:"M d, Y" }}</p>
+                            <p style="color: var(--text-main); line-height: 1.5;">{{ report.description }}</p>
+                            
+                            <!-- Status Timeline -->
+                            <div style="margin-top: 20px; display:flex; align-items: center; gap:8px; background:var(--surface); padding:16px; border-radius:var(--radius-sm); border: 1px solid var(--border-light); font-size:0.85rem; overflow-x: auto;">
+                                <div style="font-weight:{% if report.status == 'Submitted' or report.status == 'Acknowledged' or report.status == 'In Progress' or report.status == 'Resolved' %}700{% else %}500{% endif %}; color:{% if report.status == 'Submitted' %}var(--warning){% else %}var(--text-main){% endif %}">1. Submitted</div>
+                                <span style="color: var(--border-dark);">→</span>
+                                <div style="font-weight:{% if report.status == 'Acknowledged' or report.status == 'In Progress' or report.status == 'Resolved' %}700{% else %}500{% endif %}; color:{% if report.status == 'Acknowledged' %}var(--info){% else %}var(--text-muted){% endif %}">2. Acknowledged</div>
+                                <span style="color: var(--border-dark);">→</span>
+                                <div style="font-weight:{% if report.status == 'In Progress' or report.status == 'Resolved' %}700{% else %}500{% endif %}; color:{% if report.status == 'In Progress' %}var(--safety-orange){% else %}var(--text-muted){% endif %}">3. In Progress</div>
+                                <span style="color: var(--border-dark);">→</span>
+                                <div style="font-weight:{% if report.status == 'Resolved' %}700{% else %}500{% endif %}; color:{% if report.status == 'Resolved' %}var(--success){% else %}var(--text-muted){% endif %}">4. Resolved</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 60px 20px; background: var(--off-white); border-radius: var(--radius-md);">
+                <div style="font-size: 3rem; margin-bottom: 16px;">🏙️</div>
+                <h4 style="color: var(--text-main);">No reports yet</h4>
+                <p class="text-muted" style="margin-bottom: 24px;">You haven't reported any civic issues. Help clean up your city today.</p>
+                <a href="{% url 'create_report' %}" class="btn btn-primary">Report an Issue</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
