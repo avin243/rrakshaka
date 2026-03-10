@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from reports.models import IssueReport
-from accounts.models import RewardPoint
 def home(request):
     return render(request, 'core/index.html')
 
@@ -22,24 +21,9 @@ def reviewer_dashboard(request):
         
         if report_id:
             report = get_object_or_404(IssueReport, id=report_id)
-            old_status = report.status
             report.status = new_status
             report.admin_notes = admin_notes
             report.save()
-            
-            # Award points if status changed to Resolved
-            if old_status != 'Resolved' and new_status == 'Resolved':
-                try:
-                    profile = report.reporter.profile
-                    profile.points += 20
-                    profile.save()
-                    RewardPoint.objects.create(
-                        user=report.reporter,
-                        points=20,
-                        action=f"Issue '{report.category.name}' marked as Resolved"
-                    )
-                except Exception as e:
-                    pass
             
             messages.success(request, f'Status updated to {new_status} for Issue #{report.id}')
             return redirect('reviewer_dashboard')

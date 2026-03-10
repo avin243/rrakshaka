@@ -22,6 +22,7 @@ class IssueReport(models.Model):
         ('Acknowledged', 'Acknowledged'),
         ('In Progress', 'In Progress'),
         ('Resolved', 'Resolved'),
+        ('Rejected', 'Rejected/Spam'),
     ]
 
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports')
@@ -39,3 +40,39 @@ class IssueReport(models.Model):
 
     def __str__(self):
         return f"Issue #{self.id} - {self.category} ({self.status})"
+        
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        old_status = None
+        if not is_new:
+            try:
+                old_report = IssueReport.objects.get(pk=self.pk)
+                old_status = old_report.status
+            except IssueReport.DoesNotExist:
+                pass
+                
+        super().save(*args, **kwargs)
+        
+        # Globally handle point updates on status changes
+        if not is_new and old_status and old_status != self.status:
+            from accounts.models import RewardPoint
+            try:
+                profile = self.reporter.profile
+                if self.status == 'Resolved':
+                    profile.points += 20
+                    profile.save()
+                    RewardPoint.objects.create(
+                        user=self.reporter,
+                        points=20,
+                        action=f"Issue '{self.category.name}' marked as Resolved"
+                    )
+                elif self.status == 'Rejected':
+                    profile.points -= 15
+                    profile.save()
+                    RewardPoint.objects.create(
+                        user=self.reporter,
+                        points=-15,
+                        action=f"Issue '{self.category.name}' rejected as Spam"
+                    )
+            except Exception:
+                pass

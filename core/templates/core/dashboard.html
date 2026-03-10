@@ -33,6 +33,8 @@
                                     <span class="badge badge-orange">{{ report.status }}</span>
                                 {% elif report.status == 'Acknowledged' %}
                                     <span class="badge badge-blue">{{ report.status }}</span>
+                                {% elif report.status == 'Rejected' %}
+                                    <span class="badge" style="background:#fee2e2;color:#991b1b;">{{ report.status }}</span>
                                 {% else %}
                                     <span class="badge badge-gray">{{ report.status }}</span>
                                 {% endif %}
