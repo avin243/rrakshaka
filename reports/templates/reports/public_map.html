@@ -50,17 +50,11 @@
 
     <div id="map-view-container" class="map-wrapper fade-in-up">
         <div class="controls">
-            <select class="form-select">
-                <option>All Categories</option>
-                <option>Potholes</option>
-                <option>Broken Streetlights</option>
-                <option>Garbage Accumulation</option>
-            </select>
-            <select class="form-select">
-                <option>All Statuses</option>
-                <option>Submitted</option>
-                <option>In Progress</option>
-                <option>Resolved</option>
+            <select class="form-select" id="category-filter">
+                <option value="All">All Categories</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.name }}">{{ cat.name }}</option>
+                {% endfor %}
             </select>
         </div>
         <div id="public-map"></div>
@@ -69,9 +63,23 @@
     <div id="list-view-container" style="display: none;" class="fade-in-up">
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px;">
             {% for report in reports %}
-                <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                <div class="card report-item" data-category="{{ report.category.name }}" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
                     {% if report.photo %}
-                        <img src="{{ report.photo.url }}" alt="Report" style="width: 100%; height: 220px; object-fit: cover;">
+                        <div style="position:relative;">
+                            <img src="{{ report.photo.url }}" alt="Report" style="width: 100%; height: 220px; object-fit: cover;">
+                            {% if report.extra_images.all %}
+                                <div style="position:absolute; bottom:12px; right:12px; display:flex; gap:6px; background:rgba(0,0,0,0.4); padding:6px; border-radius:8px; backdrop-filter:blur(4px);">
+                                {% for extra_img in report.extra_images.all|slice:":3" %}
+                                    <img src="{{ extra_img.image.url }}" alt="Extra" style="width:36px; height:36px; object-fit:cover; border-radius:4px; border:2px solid rgba(255,255,255,0.8);">
+                                {% endfor %}
+                                {% if report.extra_images.count > 3 %}
+                                    <div style="width:36px; height:36px; border-radius:4px; background:rgba(0,0,0,0.6); color:white; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:bold;">
+                                        +{{ report.extra_images.count|add:"-3" }}
+                                    </div>
+                                {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
                     {% else %}
                         <div style="width: 100%; height: 220px; background: var(--border-light); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--text-muted);">
                             🏙️
@@ -130,9 +138,42 @@ document.addEventListener('DOMContentLoaded', function() {
         {% endfor %}
     ];
 
+    let markers = [];
     reports.forEach(r => {
-        L.marker([r.lat, r.lng]).addTo(map)
-         .bindPopup(`<b>${r.cat}</b><br>Status: ${r.status}`);
+        let marker = L.marker([r.lat, r.lng]).bindPopup(`<b>${r.cat}</b><br>Status: ${r.status}`);
+        marker.category = r.cat;
+        markers.push(marker);
+        marker.addTo(map);
+    });
+
+    // Filtering logic
+    const categoryFilter = document.getElementById('category-filter');
+    const reportListItems = document.querySelectorAll('.report-item');
+
+    categoryFilter.addEventListener('change', function() {
+        const selectedCat = this.value;
+        
+        // 1. Filter Map Markers
+        markers.forEach(marker => {
+            if (selectedCat === 'All' || marker.category === selectedCat) {
+                if (!map.hasLayer(marker)) {
+                    marker.addTo(map);
+                }
+            } else {
+                if (map.hasLayer(marker)) {
+                    map.removeLayer(marker);
+                }
+            }
+        });
+
+        // 2. Filter List View Items
+        reportListItems.forEach(item => {
+            if (selectedCat === 'All' || item.getAttribute('data-category') === selectedCat) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
     });
 
     // View toggles

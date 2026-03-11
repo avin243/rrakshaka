@@ -76,3 +76,11 @@ class IssueReport(models.Model):
                     )
             except Exception:
                 pass
+
+class ReportImage(models.Model):
+    report = models.ForeignKey(IssueReport, on_delete=models.CASCADE, related_name='extra_images')
+    image = models.ImageField(upload_to='report_photos/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for Issue #{self.report.id}"

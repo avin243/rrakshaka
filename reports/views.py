@@ -11,17 +11,40 @@ def create_report(request):
         if form.is_valid():
             report = form.save(commit=False)
             report.reporter = request.user
+            
+            # The first photo is bound to the form and will be saved to report.photo
             report.save()
+            
+            # Handle additional photos
+            photos = request.FILES.getlist('photo')
+            extra_photos_count = 0
+            
+            if len(photos) > 1:
+                # The first one is already saved in report.photo by the form
+                # Save the rest in ReportImage
+                from .models import ReportImage
+                for photo in photos[1:]:
+                    ReportImage.objects.create(report=report, image=photo)
+                    extra_photos_count += 1
             
             # Award points
             try:
+                base_points = 10
+                extra_points = extra_photos_count * 5
+                total_points = base_points + extra_points
+                
                 profile = request.user.profile
-                profile.points += 10
+                profile.points += total_points
                 profile.save()
+                
+                action_text = 'Reported an issue'
+                if extra_photos_count > 0:
+                    action_text += f' (with {extra_photos_count} extra photos)'
+                    
                 RewardPoint.objects.create(
                     user=request.user,
-                    points=10,
-                    action='Reported an issue'
+                    points=total_points,
+                    action=action_text
                 )
             except:
                 pass
@@ -38,5 +61,7 @@ def report_success(request, report_id):
     return render(request, 'reports/report_success.html', {'report': report})
 
 def public_map(request):
-    reports = IssueReport.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
-    return render(request, 'reports/public_map.html', {'reports': reports})
+    from .models import Category
+    reports = IssueReport.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True).exclude(status__in=['Resolved', 'Rejected'])
+    categories = Category.objects.all()
+    return render(request, 'reports/public_map.html', {'reports': reports, 'categories': categories})

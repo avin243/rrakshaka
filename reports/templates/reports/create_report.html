@@ -86,8 +86,8 @@
                             <p style="font-weight: 500; font-size: 1.1rem; margin-top:12px;">Tap to snap a photo or drag & drop</p>
                             <p style="font-size: 0.85rem; color: var(--text-muted); margin:0;">Clear photos help resolve issues faster.</p>
                         </div>
-                        <input type="file" name="photo" id="id_photo" accept="image/*" capture="environment" style="display:none;" required>
-                        <img id="image-preview" class="photo-preview" src="#" alt="Preview">
+                        <input type="file" name="photo" id="id_photo" accept="image/*" capture="environment" style="display:none;" multiple required>
+                        <div id="image-preview-container" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; width:100%; display:none;"></div>
                     </div>
                     {% if form.photo.errors %}<div style="color:var(--error); font-size:0.85rem; margin-top:8px;">{{ form.photo.errors }}</div>{% endif %}
                 </div>
@@ -158,8 +158,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- File Upload Preview & Drag-Drop ---
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('id_photo');
-    const imgPreview = document.getElementById('image-preview');
+    const imgPreviewContainer = document.getElementById('image-preview-container');
     const uploadText = document.getElementById('upload-text');
+    let selectedFiles = [];
 
     dropZone.addEventListener('click', () => fileInput.click());
 
@@ -175,21 +176,34 @@ document.addEventListener('DOMContentLoaded', function() {
         dropZone.classList.remove('dragover');
         if (e.dataTransfer.files.length) {
             fileInput.files = e.dataTransfer.files;
-            updatePreview();
+            handleFiles(fileInput.files);
         }
     });
 
-    fileInput.addEventListener('change', updatePreview);
+    fileInput.addEventListener('change', () => {
+        handleFiles(fileInput.files);
+    });
 
-    function updatePreview() {
-        if (fileInput.files && fileInput.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imgPreview.src = e.target.result;
-                imgPreview.style.display = 'inline-block';
-                uploadText.style.display = 'none';
-            }
-            reader.readAsDataURL(fileInput.files[0]);
+    function handleFiles(files) {
+        if (files && files.length > 0) {
+            imgPreviewContainer.innerHTML = ''; // Clear previous previews
+            imgPreviewContainer.style.display = 'flex';
+            uploadText.style.display = 'none';
+            
+            Array.from(files).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'photo-preview';
+                    img.style.display = 'block';
+                    img.style.width = '120px';
+                    img.style.height = '120px';
+                    img.style.objectFit = 'cover';
+                    imgPreviewContainer.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            });
         }
     }
 
