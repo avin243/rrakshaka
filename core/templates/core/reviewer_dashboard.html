@@ -242,5 +242,80 @@
             </div>
         {% endfor %}
     {% endif %}
+
+    {% if user.is_superuser %}
+        <hr style="margin: 4rem 0; border: none; border-top: 2px solid var(--border-color);">
+        <div class="dashboard-header">
+            <div>
+                <h2>Staff Management</h2>
+                <p class="text-secondary">Review and approve staff account applications</p>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 1rem;">Pending Requests</h3>
+        <table class="report-card" style="width: 100%; display: table; margin-bottom: 2rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                    <th style="padding: 1rem;">Username</th>
+                    <th style="padding: 1rem;">Joined</th>
+                    <th style="padding: 1rem;">Phone</th>
+                    <th style="padding: 1rem;">City/Ward</th>
+                    <th style="padding: 1rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in pending_staff %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 1rem;">{{ profile.user.username }}</td>
+                        <td style="padding: 1rem;">{{ profile.user.date_joined|date:"M d, Y" }}</td>
+                        <td style="padding: 1rem;">{{ profile.phone|default:"N/A" }}</td>
+                        <td style="padding: 1rem;">{{ profile.city_ward|default:"N/A" }}</td>
+                        <td style="padding: 1rem;">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="profile_id" value="{{ profile.id }}">
+                                    <button type="submit" name="action" value="approve" class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">Approve</button>
+                                    <button type="submit" name="action" value="reject" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">Reject</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No pending staff requests.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3 style="margin-bottom: 1rem;">Approved Staff</h3>
+        <table class="report-card" style="width: 100%; display: table; margin-bottom: 2rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                    <th style="padding: 1rem;">Username</th>
+                    <th style="padding: 1rem;">Joined</th>
+                    <th style="padding: 1rem;">Active Issues</th>
+                    <th style="padding: 1rem;">Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in approved_staff %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 1rem;">{{ profile.user.username }}</td>
+                        <td style="padding: 1rem;">{{ profile.user.date_joined|date:"M d, Y" }}</td>
+                        <td style="padding: 1rem;">
+                            {{ profile.user.assigned_issues.count }} / 10
+                        </td>
+                        <td style="padding: 1rem;">{{ profile.points }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No approved staff members yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
 </div>
 {% endblock %}

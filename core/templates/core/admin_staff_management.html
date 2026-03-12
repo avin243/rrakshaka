@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Staff Management - RoadRakshaka{% endblock %}
+
+{% block extra_head %}
+<style>
+    .management-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .section-header {
+        margin-bottom: 2rem;
+        border-bottom: 2px solid var(--primary-color);
+        padding-bottom: 0.5rem;
+    }
+    
+    .staff-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        margin-bottom: 3rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    
+    .staff-table th, .staff-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .staff-table th {
+        background: var(--bg-hover);
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .btn-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="management-container">
+    <div class="section-header">
+        <h1>Staff Management</h1>
+        <p>Review and approve staff account applications</p>
+    </div>
+
+    <h2>Pending Requests</h2>
+    <table class="staff-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Joined</th>
+                <th>Phone</th>
+                <th>City/Ward</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for profile in pending_staff %}
+                <tr>
+                    <td>{{ profile.user.username }}</td>
+                    <td>{{ profile.user.date_joined|date:"M d, Y" }}</td>
+                    <td>{{ profile.phone|default:"N/A" }}</td>
+                    <td>{{ profile.city_ward|default:"N/A" }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="profile_id" value="{{ profile.id }}">
+                                <button type="submit" name="action" value="approve" class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">Approve</button>
+                                <button type="submit" name="action" value="reject" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">Reject</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" class="empty-state">No pending staff requests.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Approved Staff</h2>
+    <table class="staff-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Joined</th>
+                <th>Active Issues</th>
+                <th>Points</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for profile in approved_staff %}
+                <tr>
+                    <td>{{ profile.user.username }}</td>
+                    <td>{{ profile.user.date_joined|date:"M d, Y" }}</td>
+                    <td>
+                        {# This would ideally be an annotation, but for now we'll just show the count if possible #}
+                        {{ profile.user.assigned_issues.count }} / 10
+                    </td>
+                    <td>{{ profile.points }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4" class="empty-state">No approved staff members yet.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

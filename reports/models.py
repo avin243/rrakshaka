@@ -37,6 +37,7 @@ class IssueReport(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     admin_notes = models.TextField(blank=True, null=True)
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_issues')
 
     def __str__(self):
         return f"Issue #{self.id} - {self.category} ({self.status})"
@@ -53,7 +54,28 @@ class IssueReport(models.Model):
                 
         super().save(*args, **kwargs)
         
-        # Globally handle point updates on status changes
+        # --- Automated Issue Allocation Logic ---
+        if is_new:
+            # On creation, try to assign to a staff member
+            from accounts.models import Profile
+            StaffProfile = Profile.objects.filter(is_staff_member=True)
+            candidate_staff = None
+            min_count = 11  # More than the limit of 10
+            
+            for profile in StaffProfile:
+                # Count active issues (not Resolved/Rejected) assigned to this staff member
+                active_count = IssueReport.objects.filter(assigned_to=profile.user).exclude(status__in=['Resolved', 'Rejected']).count()
+                if active_count < 10 and active_count < min_count:
+                    min_count = active_count
+                    candidate_staff = profile.user
+            
+            if candidate_staff:
+                # Re-save with assignment and Acknowledged status
+                self.assigned_to = candidate_staff
+                self.status = 'Acknowledged'
+                super().save(update_fields=['assigned_to', 'status'])
+        
+        # --- Point Allocation and Backfilling Logic ---
         if not is_new and old_status and old_status != self.status:
             from accounts.models import RewardPoint
             try:
@@ -74,6 +96,17 @@ class IssueReport(models.Model):
                         points=-15,
                         action=f"Issue '{self.category.name}' rejected as Spam"
                     )
+                
+                # Backfilling: If a staff member just finished a task, assign them a new "Submitted" report if any exist
+                if self.status in ['Resolved', 'Rejected'] and self.assigned_to:
+                    # Check if this staff member now has space
+                    active_count = IssueReport.objects.filter(assigned_to=self.assigned_to).exclude(status__in=['Resolved', 'Rejected']).count()
+                    if active_count < 10:
+                        pending_report = IssueReport.objects.filter(status='Submitted', assigned_to__isnull=True).order_by('created_at').first()
+                        if pending_report:
+                            pending_report.assigned_to = self.assigned_to
+                            pending_report.status = 'Acknowledged'
+                            pending_report.save()
             except Exception:
                 pass
 

@@ -21,7 +21,10 @@
                 <a href="{% url 'public_map' %}">Public Map</a>
                 <a href="{% url 'rewards' %}">Rewards</a>
                 {% if user.is_staff %}
-                    <a href="{% url 'reviewer_dashboard' %}" style="color:red; font-weight:bold;">Review Dashboard</a>
+                    <a href="{% url 'reviewer_dashboard' %}" style="color:red; font-weight:bold;">Review</a>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <a href="{% url 'admin_staff_management' %}" style="color:green; font-weight:bold;">Approve</a>
                 {% endif %}
                 {% if user.is_authenticated %}
                     <a href="{% url 'dashboard' %}">Dashboard</a>

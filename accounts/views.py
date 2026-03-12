@@ -15,6 +15,12 @@ def signup(request):
                 profile.phone = request.POST.get('phone', '')
                 profile.city_ward = request.POST.get('city_ward', '')
                 profile.terms_accepted = request.POST.get('terms') == 'on'
+                
+                # Check for staff role in GET or POST
+                role = request.GET.get('role') or request.POST.get('role')
+                if role == 'staff':
+                    profile.is_pending_staff_approval = True
+                
                 profile.save()
             except Exception as e:
                 pass
